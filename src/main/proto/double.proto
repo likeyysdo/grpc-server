@@ -6,7 +6,7 @@ option java_outer_classname = "doubletype";
 
 package type;
 
-import "google/protobuf/timestamp.proto";
+
 
 // The greeting service definition.
 service doubles {
