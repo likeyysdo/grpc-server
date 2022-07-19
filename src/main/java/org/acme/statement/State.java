@@ -123,7 +123,7 @@ public enum State {
             switch (action){
                 case CLIENT_STATUS_INITIALIZE : return false;
                 case CLIENT_STATUS_SEND_STATEMENT : return true;
-                case CLIENT_STATUS_RECEIVE_DATA : return false;
+                case CLIENT_STATUS_RECEIVE_DATA : return true;
                 case CLIENT_STATUS_FINISHED : return true;
 
                 case CLIENT_STATUS_UNKNOWN : return false;

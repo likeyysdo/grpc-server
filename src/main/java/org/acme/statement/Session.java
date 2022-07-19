@@ -1,10 +1,7 @@
 package org.acme.statement;
 
 import com.google.protobuf.ByteString;
-import com.google.protobuf.CodedInputStream;
-import com.google.protobuf.CodedOutputStream;
 import com.google.protobuf.UnsafeByteOperations;
-import io.agroal.api.AgroalDataSource;
 import io.quarkus.remote.ClientStatus;
 import io.quarkus.remote.ServerStatus;
 import io.quarkus.remote.SimpleStatementRequest;
@@ -17,9 +14,6 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
 import java.util.Properties;
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
-import org.acme.SatementService;
 import org.acme.remotejdbc.encode.ResultRowEncodeFactory;
 import org.acme.remotejdbc.metadata.DefaultResultSetMetaDataEncoder;
 import org.jboss.logging.Logger;
@@ -80,7 +74,7 @@ public class Session {
         initialized = true;
         buffer = new ByteString[500];
         state = state.doAction(ClientStatus.CLIENT_STATUS_INITIALIZE);
-
+        log.debug("Return Status" + ServerStatus.SERVER_STATUS_INITIALIZED.name());
         return SimpleStatementResponse.newBuilder()
             .setStatus(ServerStatus.SERVER_STATUS_INITIALIZED)
             .build();
@@ -92,7 +86,7 @@ public class Session {
 
        resultSetMetaData = new DefaultResultSetMetaDataEncoder().encode(sourceMetaData);
        factory = new ResultRowEncodeFactory.Builder(sourceMetaData).build();
-
+       log.debug("Return Status" + ServerStatus.SERVER_STATUS_RECEIVED_STATEMENT.name());
        state = state.doAction(ClientStatus.CLIENT_STATUS_SEND_STATEMENT);
        return SimpleStatementResponse.newBuilder()
             .setStatus(ServerStatus.SERVER_STATUS_RECEIVED_STATEMENT)
@@ -115,20 +109,29 @@ public class Session {
             state = State.TRANSMIT_FINISHED;
         }
         log.debug("buffer size" +count);
-        if( state.equals(State.TRANSMITTING) ){
+
+        if( state.equals(State.STATEMENT_PREPARED) ){
+            log.debug("first get data state is " + state);
+            state = state.doAction(ClientStatus.CLIENT_STATUS_RECEIVE_DATA);
+            log.debug("after get data state is " + state);
+        }
+
+        if( state.equals(State.TRANSMITTING)  ){
             SimpleStatementResponse.Builder builder = SimpleStatementResponse.newBuilder()
                 .setStatus(ServerStatus.SERVER_STATUS_HAS_NEXT_DATA);
             for( int i = 0 ; i < count ; i++){
                 builder.addResult(buffer[i]);
             }
+            log.debug("Return Status" + ServerStatus.SERVER_STATUS_HAS_NEXT_DATA.name());
             return builder.build();
         }else if(state.equals(State.TRANSMIT_FINISHED)){
             SimpleStatementResponse.Builder builder = SimpleStatementResponse.newBuilder()
                 .setStatus(ServerStatus.SERVER_STATUS_NOT_HAS_NEXT_DATA);
             for( int i = 0 ; i < count ; i++){
-                log.debug("buffer isnull " + i +" "+  (buffer[i] == null));
+                //log.debug("buffer isnull " + i +" "+  (buffer[i] == null));
                 builder.addResult(buffer[i]);
             }
+            log.debug("Return Status" + ServerStatus.SERVER_STATUS_NOT_HAS_NEXT_DATA.name());
             return builder.build();
         }
 
@@ -137,12 +140,14 @@ public class Session {
     }
     SimpleStatementResponse finished() throws SQLException {
         closeAll();
+        log.debug("Return Status" + ServerStatus.SERVER_STATUS_FINISHED.name());
         return SimpleStatementResponse.newBuilder()
             .setStatus(ServerStatus.SERVER_STATUS_FINISHED)
             .build();
     }
     SimpleStatementResponse unknown() throws SQLException {
         closeAll();
+        log.debug("Return Status" + ServerStatus.SERVER_STATUS_ERROR.name());
         return SimpleStatementResponse.newBuilder()
             .setStatus(ServerStatus.SERVER_STATUS_ERROR)
             .setBody("Receive client Error status")
@@ -153,12 +158,14 @@ public class Session {
         canceled = true;
         closeStatement();
         state = State.CANCELED;
+        log.debug("Return Status" + ServerStatus.SERVER_STATUS_CANCELED.name());
         return SimpleStatementResponse.newBuilder()
-            .setStatus(ServerStatus.SERVER_STATUS_FINISHED)
+            .setStatus(ServerStatus.SERVER_STATUS_CANCELED)
             .build();
     }
     SimpleStatementResponse error() throws SQLException {
         closeAll();
+        log.debug("Return Status" + ServerStatus.SERVER_STATUS_ERROR.name());
         return SimpleStatementResponse.newBuilder()
             .setStatus(ServerStatus.SERVER_STATUS_ERROR)
             .setBody("Receive client Error status")

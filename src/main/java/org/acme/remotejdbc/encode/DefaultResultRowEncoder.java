@@ -43,7 +43,8 @@ public class DefaultResultRowEncoder implements ResultRowEncoder {
             z.writeSInt64NoTag((long) (y.getDouble(x) * DOUBLE_SCALE));
         };
         encodeString = (x, y, z) -> {
-            z.writeStringNoTag(y.getString(x));
+            String s = y.getString(x);
+            z.writeStringNoTag(s == null ? "":s);
         };
         encodeBoolean = (x, y, z) -> {
             z.writeBoolNoTag(y.getBoolean(x));
