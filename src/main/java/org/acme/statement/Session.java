@@ -51,6 +51,15 @@ public class Session {
         this.connection = connection;
     }
 
+    public SimpleStatementResponse exceptionHandler(Exception e){
+        state = State.ERROR;
+        return SimpleStatementResponse.newBuilder()
+            .setStatus(ServerStatus.SERVER_STATUS_ERROR)
+            .setBody(e.getMessage())
+            .build();
+    }
+
+
     public SimpleStatementResponse doAction(SimpleStatementRequest simpleStatementRequest)
         throws SQLException, IOException {
         request = simpleStatementRequest;
@@ -70,9 +79,9 @@ public class Session {
         }
     }
 
-    SimpleStatementResponse initialize() throws SQLException {
+    SimpleStatementResponse initialize()   {
         initialized = true;
-        buffer = new ByteString[500];
+        buffer = new ByteString[3000];
         state = state.doAction(ClientStatus.CLIENT_STATUS_INITIALIZE);
         log.debug("Return Status" + ServerStatus.SERVER_STATUS_INITIALIZED.name());
         return SimpleStatementResponse.newBuilder()
@@ -80,18 +89,20 @@ public class Session {
             .build();
     }
     SimpleStatementResponse sendStatement() throws SQLException, IOException {
-       statement =  connection.createStatement();
-       resultSet = statement.executeQuery(request.getBody());
-       ResultSetMetaData sourceMetaData = resultSet.getMetaData();
 
-       resultSetMetaData = new DefaultResultSetMetaDataEncoder().encode(sourceMetaData);
-       factory = new ResultRowEncodeFactory.Builder(sourceMetaData).build();
-       log.debug("Return Status" + ServerStatus.SERVER_STATUS_RECEIVED_STATEMENT.name());
-       state = state.doAction(ClientStatus.CLIENT_STATUS_SEND_STATEMENT);
-       return SimpleStatementResponse.newBuilder()
-            .setStatus(ServerStatus.SERVER_STATUS_RECEIVED_STATEMENT)
-            .addResult(UnsafeByteOperations.unsafeWrap(resultSetMetaData))
-            .build();
+            statement =  connection.createStatement();
+            resultSet = statement.executeQuery(request.getBody());
+            ResultSetMetaData sourceMetaData = resultSet.getMetaData();
+
+            resultSetMetaData = new DefaultResultSetMetaDataEncoder().encode(sourceMetaData);
+            factory = new ResultRowEncodeFactory.Builder(sourceMetaData).build();
+            log.debug("Return Status" + ServerStatus.SERVER_STATUS_RECEIVED_STATEMENT.name());
+            state = state.doAction(ClientStatus.CLIENT_STATUS_SEND_STATEMENT);
+            return SimpleStatementResponse.newBuilder()
+                .setStatus(ServerStatus.SERVER_STATUS_RECEIVED_STATEMENT)
+                .addResult(UnsafeByteOperations.unsafeWrap(resultSetMetaData))
+                .build();
+
     }
     SimpleStatementResponse receiveData() throws SQLException, IOException {
         int count = 0;
@@ -154,10 +165,16 @@ public class Session {
             .build();
     }
     SimpleStatementResponse cancel() throws SQLException {
-        statement.cancel();
-        canceled = true;
-        closeStatement();
-        state = State.CANCELED;
+        if( !canceled ) {
+            if( statement  == null ){
+                log.debug("statement is null do not need cancel");
+            }else{
+                statement.cancel();
+            }
+            canceled = true;
+            closeStatement();
+            state = State.CANCELED;
+        }
         log.debug("Return Status" + ServerStatus.SERVER_STATUS_CANCELED.name());
         return SimpleStatementResponse.newBuilder()
             .setStatus(ServerStatus.SERVER_STATUS_CANCELED)

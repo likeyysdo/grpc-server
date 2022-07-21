@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.sql.Connection;
 import java.sql.SQLException;
 import org.acme.statement.Session;
+import org.acme.statement.State;
 import org.jboss.logging.Logger;
 
 /**
@@ -38,27 +39,35 @@ public class StatementRequestHandler
         try {
             responseObserver.onNext(session.doAction(simpleStatementRequest));
         } catch (SQLException | IOException e) {
-            e.printStackTrace();
+            log.warn(e);
+            responseObserver.onNext(session.exceptionHandler(e));
+            try {
+                session.closeAll();
+            } catch (SQLException ex) {
+                log.error(ex);
+            }
         }
     }
 
     @Override
     public void onError(Throwable throwable) {
+        log.warn("onError");
         try {
             session.closeAll();
         } catch (SQLException e) {
-            e.printStackTrace();
+            log.error(e);
         }
-        throwable.printStackTrace();
+        log.error(throwable);
     }
 
     @Override
     public void onCompleted() {
+        log.debug("onCompleted");
         responseObserver.onCompleted();
         try {
             session.closeAll();
         } catch (SQLException e) {
-            e.printStackTrace();
+            log.error(e);
         }
     }
 
