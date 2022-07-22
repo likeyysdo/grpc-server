@@ -31,11 +31,14 @@ public class SatementService extends SimpleStatementGrpc.SimpleStatementImplBase
     AgroalDataSource dataSource;
 
 
+    @Inject
+    RsqlConfig defaultConfig;
+
     @Override
     public io.grpc.stub.StreamObserver<io.quarkus.remote.SimpleStatementRequest> exec(
         io.grpc.stub.StreamObserver<io.quarkus.remote.SimpleStatementResponse> responseObserver) {
         try {
-            return new StatementRequestHandler(dataSource.getConnection(), responseObserver);
+            return new StatementRequestHandler(dataSource.getConnection(),defaultConfig, responseObserver);
         } catch (SQLException e) {
             e.printStackTrace();
         }

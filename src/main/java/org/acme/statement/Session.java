@@ -12,10 +12,13 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.List;
 import java.util.Properties;
+import javax.enterprise.context.ApplicationScoped;
+import javax.inject.Inject;
+import org.acme.RsqlConfig;
 import org.acme.remotejdbc.encode.ResultRowEncodeFactory;
 import org.acme.remotejdbc.metadata.DefaultResultSetMetaDataEncoder;
+import org.acme.utils.CodeUtils;
 import org.jboss.logging.Logger;
 
 /**
@@ -25,8 +28,11 @@ import org.jboss.logging.Logger;
  * @Created by byco
  */
 
+
 public class Session {
     private static final Logger log = Logger.getLogger(Session.class);
+
+    private RsqlConfig defaultConfig;
 
     private Properties properties;
     private State state;
@@ -43,12 +49,17 @@ public class Session {
     private ResultRowEncodeFactory factory;
     private byte[] resultSetMetaData;
 
-    public Session(Connection connection){
+    public Session(Connection connection, RsqlConfig defaultConfig){
         state = State.UNINITIALIZED;
         initialized = false;
         canceled = false;
         closed = false;
         this.connection = connection;
+        this.defaultConfig = defaultConfig;
+    }
+
+    public RsqlConfig getConfig(){
+        return defaultConfig;
     }
 
     public SimpleStatementResponse exceptionHandler(Exception e){
@@ -79,15 +90,53 @@ public class Session {
         }
     }
 
-    SimpleStatementResponse initialize()   {
-        initialized = true;
-        buffer = new ByteString[3000];
+    SimpleStatementResponse initialize() throws IOException {
+        log.debug("initialize Properties");
+        initializeProperties(request.getBody());
         state = state.doAction(ClientStatus.CLIENT_STATUS_INITIALIZE);
         log.debug("Return Status" + ServerStatus.SERVER_STATUS_INITIALIZED.name());
+        initialized = true;
         return SimpleStatementResponse.newBuilder()
             .setStatus(ServerStatus.SERVER_STATUS_INITIALIZED)
             .build();
     }
+
+    void initializeProperties(String encodeProperties) throws IOException {
+        this.properties = CodeUtils.decodeProperties(encodeProperties);
+        initializeBuffer();
+    }
+
+    void initializeBuffer(){
+        log.debug("initializeBuffer");
+        int bufferSize = defaultConfig.defaultFetchSize() == 0 ? 1000 : defaultConfig.defaultFetchSize();
+        String clientFetchSizeText = getNotNullProperty( properties.getProperty("fetchSize",String.valueOf(bufferSize)) );
+        if( isNotNullPropertyValue(clientFetchSizeText) ){
+            log.debug("Properties bufferSize client value :" + clientFetchSizeText);
+            int clientFetchSize = Integer.parseInt(clientFetchSizeText);
+            if( defaultConfig.minFetchSize() <= clientFetchSize && clientFetchSize <=
+                defaultConfig.maxFetchSize() ){
+                bufferSize = clientFetchSize;
+            }
+        }
+        log.debug("final bufferSize  value :" + bufferSize);
+        buffer = new ByteString[bufferSize];
+    }
+
+    boolean isNotNullPropertyValue(String property){
+        return !"".equals(property);
+    }
+
+    String getNotNullProperty( String property ){
+        if( properties == null ) return "";
+        String propertyValue = properties.getProperty(property);
+        if( propertyValue != null && !propertyValue.trim().isBlank() ){
+            return propertyValue;
+        }else{
+            return "";
+        }
+    }
+
+
     SimpleStatementResponse sendStatement() throws SQLException, IOException {
 
             statement =  connection.createStatement();

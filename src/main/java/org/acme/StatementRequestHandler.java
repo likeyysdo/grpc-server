@@ -24,10 +24,11 @@ public class StatementRequestHandler
     private static final Logger log = Logger.getLogger(StatementRequestHandler.class);
 
     public StatementRequestHandler(Connection connection,
-        StreamObserver<SimpleStatementResponse> responseObserver) {
+                                   RsqlConfig defaultConfig,
+                                   StreamObserver<SimpleStatementResponse> responseObserver) {
         super(responseObserver);
         this.connection = connection;
-        session = new Session(connection);
+        session = new Session(connection,defaultConfig);
     }
 
     private Connection connection;
