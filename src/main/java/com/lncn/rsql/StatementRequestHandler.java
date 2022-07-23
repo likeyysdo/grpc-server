@@ -37,7 +37,7 @@ public class StatementRequestHandler
         try {
             responseObserver.onNext(session.doAction(simpleStatementRequest));
         } catch (SQLException | IOException e) {
-            log.warn(e);
+            log.info("The exception return to client: ",e);
             responseObserver.onNext(session.exceptionHandler(e));
             try {
                 session.closeAll();
