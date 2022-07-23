@@ -142,7 +142,7 @@ public class Session {
             statement =  connection.createStatement();
             log.debug("encode sql body " + request.getBody());
             String sql = CodeUtils.decodeText(request.getBody());
-            log.debug("executeQuery " + sql);
+            log.info("executeQuery " + sql);
             resultSet = statement.executeQuery(sql);
             ResultSetMetaData sourceMetaData = resultSet.getMetaData();
 
@@ -171,7 +171,7 @@ public class Session {
             //finish
             state = State.TRANSMIT_FINISHED;
         }
-        log.debug("real fetch size " +count);
+        //log.debug("real fetch size " +count);
         if( state.equals(State.STATEMENT_PREPARED) ){
             state = state.doAction(ClientStatus.CLIENT_STATUS_RECEIVE_DATA);
         }
