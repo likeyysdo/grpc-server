@@ -1,7 +1,9 @@
 package com.lncn.rsql;
 
+import com.lncn.rsql.cache.RCacheManager;
 import com.lncn.rsql.config.RsqlConfig;
 import io.agroal.api.AgroalDataSource;
+import io.quarkus.cache.CacheManager;
 import io.quarkus.grpc.GrpcService;
 import io.quarkus.remote.SimpleStatementGrpc;
 import java.sql.SQLException;
@@ -25,13 +27,19 @@ public class SatementService extends SimpleStatementGrpc.SimpleStatementImplBase
 
 
     @Inject
+    RCacheManager rCacheManager;
+
+    @Inject
     RsqlConfig defaultConfig;
+
 
     @Override
     public io.grpc.stub.StreamObserver<io.quarkus.remote.SimpleStatementRequest> exec(
         io.grpc.stub.StreamObserver<io.quarkus.remote.SimpleStatementResponse> responseObserver) {
         try {
-            return new StatementRequestHandler(dataSource.getConnection(),defaultConfig, responseObserver);
+
+            return new StatementRequestHandler(dataSource.getConnection(),defaultConfig, responseObserver
+            ,  rCacheManager.getDefaultCache());
         } catch (SQLException e) {
             e.printStackTrace();
         }

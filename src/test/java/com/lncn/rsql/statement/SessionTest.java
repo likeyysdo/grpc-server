@@ -21,7 +21,7 @@ class SessionTest {
     @Test
     public void Inject_Test(){
         //Arrange
-        Session session = new Session(null, defaultConfig);
+        Session session = new Session(null, defaultConfig, null);
         //Act
         //Assert
         System.out.println(session.getConfig().maxFetchSize());

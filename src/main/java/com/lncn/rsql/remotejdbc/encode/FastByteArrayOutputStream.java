@@ -22,6 +22,7 @@ import java.io.OutputStream;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Iterator;
+import java.util.Random;
 
 
 /**
@@ -85,6 +86,16 @@ public class FastByteArrayOutputStream extends OutputStream {
         if( initialBlockSize <= 0 ) throw new IllegalArgumentException("Initial block size must be greater than 0");
         this.initialBlockSize = initialBlockSize;
         this.nextBlockSize = initialBlockSize;
+    }
+
+    public FastByteArrayOutputStream(int initialBlockSize,boolean predictSize) {
+          this(initialBlockSize,predictSize,DEFAULT_BLOCK_SIZE);
+    }
+
+    public FastByteArrayOutputStream(int initialBlockSize,boolean predictSize,int nextSize) {
+        if( initialBlockSize <= 0 ) throw new IllegalArgumentException("Initial block size must be greater than 0");
+        this.initialBlockSize = initialBlockSize;
+        this.nextBlockSize = nextSize;
     }
 
 

@@ -1,7 +1,9 @@
 package com.lncn.rsql;
 
+import com.lncn.rsql.cache.RCache;
 import com.lncn.rsql.config.RsqlConfig;
 import io.grpc.stub.StreamObserver;
+import io.quarkus.cache.CacheManager;
 import io.quarkus.remote.SimpleStatementRequest;
 import io.quarkus.remote.SimpleStatementResponse;
 import java.io.IOException;
@@ -22,10 +24,11 @@ public class StatementRequestHandler
 
     public StatementRequestHandler(Connection connection,
                                    RsqlConfig defaultConfig,
-                                   StreamObserver<SimpleStatementResponse> responseObserver) {
+                                   StreamObserver<SimpleStatementResponse> responseObserver,
+                                   RCache cache) {
         super(responseObserver);
         this.connection = connection;
-        session = new Session(connection,defaultConfig);
+        session = new Session(connection,defaultConfig,cache);
     }
 
     private Connection connection;
