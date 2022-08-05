@@ -56,10 +56,10 @@ public class DefaultResultRowEncoder implements ResultRowEncoder {
             z.writeUInt64NoTag(y.getDate(x).getTime());
         };
         encodeTime = (x, y, z) -> {
-            z.writeUInt64NoTag(y.getDate(x).getTime());
+            z.writeUInt64NoTag(y.getTime(x).getTime());
         };
         encodeTimestamp = (x, y, z) -> {
-            z.writeUInt64NoTag(y.getDate(x).getTime());
+            z.writeUInt64NoTag(y.getTimestamp(x).getTime());
         };
         encodeByteArray = (x, y, z) -> {
             z.writeByteArrayNoTag(y.getBytes(x));

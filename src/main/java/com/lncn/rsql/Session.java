@@ -165,9 +165,9 @@ public class Session {
 
 
     SimpleStatementResponse sendStatement() throws SQLException, IOException {
-            log.debug("encode sql body " + request.getBody());
+            log.debug("encode sql body {}" , request.getBody());
             String sql = CodeUtils.decodeText(request.getBody());
-            log.info("executeQuery " + sql);
+            log.info("executeQuery {}" , sql);
             if( enableCache ){
                 cacheKey = sql;
                 log.debug("cache key:{}",cacheKey);

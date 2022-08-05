@@ -83,6 +83,8 @@
       <groupId>io.quarkus</groupId>
       <artifactId>quarkus-reactive-mysql-client</artifactId>
     </dependency>
+
+
   </dependencies>
   <build>
     <plugins>

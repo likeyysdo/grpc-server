@@ -3,7 +3,6 @@ package com.lncn.rsql;
 import com.lncn.rsql.cache.RCache;
 import com.lncn.rsql.config.RsqlConfig;
 import io.grpc.stub.StreamObserver;
-import io.quarkus.cache.CacheManager;
 import io.quarkus.remote.SimpleStatementRequest;
 import io.quarkus.remote.SimpleStatementResponse;
 import java.io.IOException;
@@ -52,7 +51,7 @@ public class StatementRequestHandler
 
     @Override
     public void onError(Throwable throwable) {
-        log.warn("onError");
+        log.debug("onError");
         try {
             session.closeAll();
         } catch (SQLException e) {
