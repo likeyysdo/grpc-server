@@ -3,6 +3,7 @@ package com.lncn.rsql.remotejdbc.encode;
 
 import com.google.protobuf.CodedOutputStream;
 import com.lncn.rsql.remotejdbc.type.RemoteType;
+import java.math.BigDecimal;
 import java.sql.ResultSet;
 import java.util.HashMap;
 
@@ -15,7 +16,7 @@ import java.util.HashMap;
 public class DefaultResultRowEncoder implements ResultRowEncoder {
     private static final int DOUBLE_SCALE = 1000_000;
 
-    private static final HashMap<Integer, ResultRowEncodeConsumer<Integer, ResultSet, CodedOutputStream>>
+    protected static final HashMap<Integer, ResultRowEncodeConsumer<Integer, ResultSet, CodedOutputStream>>
         directEncodeMap;
     private static final ResultRowEncodeConsumer<Integer, ResultSet, CodedOutputStream> encodeInteger;
     private static final ResultRowEncodeConsumer<Integer, ResultSet, CodedOutputStream> encodeLong;
@@ -34,7 +35,7 @@ public class DefaultResultRowEncoder implements ResultRowEncoder {
             z.writeSInt32NoTag(y.getInt(x));
         };
         encodeLong = (x, y, z) -> {
-            z.writeSInt64NoTag(y.getInt(x));
+            z.writeSInt64NoTag(y.getLong(x));
         };
         encodeFloat = (x, y, z) -> {
             z.writeSInt64NoTag((long) (y.getFloat(x) * DOUBLE_SCALE));
@@ -50,19 +51,40 @@ public class DefaultResultRowEncoder implements ResultRowEncoder {
             z.writeBoolNoTag(y.getBoolean(x));
         };
         encodeBigDecimal = (x, y, z) -> {
-            z.writeSInt64NoTag(y.getBigDecimal(x).unscaledValue().longValue());
+            BigDecimal s = y.getBigDecimal(x);
+            long r = 0;
+            if( s != null  ){
+                r = s.unscaledValue().longValue();
+            }
+            z.writeSInt64NoTag(r);
         };
         encodeDate = (x, y, z) -> {
-            z.writeUInt64NoTag(y.getDate(x).getTime());
+            java.sql.Date s = y.getDate(x);
+            long r = 7L;
+            if( s != null ) {
+                r = s.getTime();
+            }
+            z.writeUInt64NoTag(r);
         };
         encodeTime = (x, y, z) -> {
-            z.writeUInt64NoTag(y.getTime(x).getTime());
+            java.sql.Time s = y.getTime(x);
+            long r = 7L;
+            if( s != null ) {
+                r = s.getTime();
+            }
+            z.writeUInt64NoTag(r);
         };
         encodeTimestamp = (x, y, z) -> {
-            z.writeUInt64NoTag(y.getTimestamp(x).getTime());
+            java.sql.Timestamp s = y.getTimestamp(x);
+            long r = 7L;
+            if( s != null ) {
+                r = s.getTime();
+            }
+            z.writeUInt64NoTag(r);
         };
         encodeByteArray = (x, y, z) -> {
-            z.writeByteArrayNoTag(y.getBytes(x));
+            byte[] s = y.getBytes(x);
+            z.writeByteArrayNoTag(s == null ? new byte[0]:s);
         };
 
         directEncodeMap = new HashMap<>(27);
@@ -87,6 +109,11 @@ public class DefaultResultRowEncoder implements ResultRowEncoder {
         directEncodeMap.put(RemoteType.DATE.jdbcType, DefaultResultRowEncoder.encodeDate);
         directEncodeMap.put(RemoteType.TIME.jdbcType, DefaultResultRowEncoder.encodeTime);
         directEncodeMap.put(RemoteType.TIMESTAMP.jdbcType, DefaultResultRowEncoder.encodeTimestamp);
+
+        directEncodeMap.put(RemoteType.NCHAR.jdbcType, DefaultResultRowEncoder.encodeString);
+        directEncodeMap.put(RemoteType.NVARCHAR.jdbcType, DefaultResultRowEncoder.encodeString);
+        directEncodeMap.put(RemoteType.LONGNVARCHAR.jdbcType, DefaultResultRowEncoder.encodeString);
+
     }
 
     public ResultRowEncodeConsumer<Integer, ResultSet, CodedOutputStream> getEncoder(Integer i) {

@@ -1,10 +1,13 @@
 package com.lncn.rsql.remotejdbc.encode;
 
 import com.google.protobuf.CodedOutputStream;
+import com.lncn.rsql.cache.RCacheManager;
 import java.io.IOException;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @Classname ResultRowEncoder
@@ -13,6 +16,9 @@ import java.sql.SQLException;
  * @Created by byco
  */
 public class ResultRowEncodeFactory {
+
+    private static final Logger log = LoggerFactory.getLogger(ResultRowEncodeFactory.class);
+
     private ResultSetMetaData resultSetMetaData;
     private FastByteArrayOutputStream array;
     private CodedOutputStream codedOutputStream;
@@ -106,6 +112,7 @@ public class ResultRowEncodeFactory {
             encoder.size = resultSetMetaData.getColumnCount();
             ResultRowEncodeConsumer[] functionList = new ResultRowEncodeConsumer[encoder.size];
             for( int i = 1 ; i <= encoder.size ; i++ ){
+                log.debug(String.valueOf(resultSetMetaData.getColumnType(i)));
                 functionList[i-1] = converter.getEncoder(resultSetMetaData.getColumnType(i));
             }
             encoder.codeFunctionList = functionList;

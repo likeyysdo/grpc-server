@@ -47,7 +47,7 @@ public class RCacheManager {
             .maximumSize(maxSize)
             .expireAfterWrite(expireTime, TimeUnit.SECONDS)
             .evictionListener((key,value,callback)->{
-                log.info("CaffeineCache expired：key:{} val:{}", key , value);
+                log.info("CaffeineCache expired：key:{}", key );
             })
             .build();
         log.debug("initCaffeineCache finish with expireTime:{} maxSize:{}",expireTime,maxSize);
