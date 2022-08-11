@@ -5,6 +5,7 @@ import com.google.protobuf.UnsafeByteOperations;
 import com.lncn.rsql.cache.RCache;
 import com.lncn.rsql.config.RsqlConfig;
 import com.lncn.rsql.remotejdbc.encode.ResultRowEncodeFactory;
+import com.lncn.rsql.remotejdbc.metadata.DefaultResultSetMetaDataAdapter;
 import com.lncn.rsql.remotejdbc.metadata.DefaultResultSetMetaDataEncoder;
 import com.lncn.rsql.utils.CodeUtils;
 import io.quarkus.remote.ClientStatus;
@@ -193,9 +194,13 @@ public class Session {
             statement =  connection.createStatement();
             resultSet = statement.executeQuery(sql);
             ResultSetMetaData sourceMetaData = resultSet.getMetaData();
-
-            resultSetMetaData = new DefaultResultSetMetaDataEncoder().encode(sourceMetaData);
-            factory = new ResultRowEncodeFactory.Builder(sourceMetaData).build();
+            ResultSetMetaData adapterMetaData =
+                DefaultResultSetMetaDataAdapter
+                    .newInstance()
+                    .setSource(sourceMetaData)
+                    .build();
+            resultSetMetaData = new DefaultResultSetMetaDataEncoder().encode(adapterMetaData);
+            factory = new ResultRowEncodeFactory.Builder(adapterMetaData).build();
             log.debug("Return Status {}" , ServerStatus.SERVER_STATUS_RECEIVED_STATEMENT.name());
             state = state.doAction(ClientStatus.CLIENT_STATUS_SEND_STATEMENT);
             return SimpleStatementResponse.newBuilder()
@@ -228,6 +233,7 @@ public class Session {
         for (ByteString bytes : result) {
             builder.addResult(bytes);
         }
+        
         log.debug("cached value return status:{}" , ServerStatus.SERVER_STATUS_NOT_HAS_NEXT_DATA.name());
         return builder.build();
     }
